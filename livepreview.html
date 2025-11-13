@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML ライブプレビューア</title>
+    <!-- Tailwind CSSを読み込みます -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Interフォントを適用します */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* スクロールバーのスタイル */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1; /* cool-gray-300 */
+            border-radius: 4px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background-color: #f1f5f9; /* cool-gray-100 */
+        }
+        /* トランジションをスムーズに */
+        .transition-all {
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden">
+
+    <!-- メインコンテナ -->
+    <div id="main-container" class="flex flex-col lg:flex-row h-full">
+        
+        <!-- === コード入力エリア === -->
+        <div id="code-area" class="w-full lg:w-1/2 h-1/2 lg:h-full flex flex-col p-4 transition-all">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-xl font-semibold text-gray-800">HTML コード</h2>
+                <div class="flex space-x-2">
+                    <!-- クリアボタン -->
+                    <button id="clear-code" title="クリア" class="p-1.5 text-gray-600 hover:text-red-500 hover:bg-gray-200 rounded-md transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                    <!-- コードエリア最大化ボタン -->
+                    <button id="toggle-code-fullscreen" title="最大化/元に戻す" class="p-1.5 text-gray-600 hover:text-blue-500 hover:bg-gray-200 rounded-md transition-colors">
+                        <!-- 初期アイコン (最大化) -->
+                        <svg class="w-5 h-5" id="code-expand-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m0 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5h-4m0 0v-4m0 4l-5-5"></path></svg>
+                        <!-- 縮小アイコン (最初は非表示) -->
+                        <svg class="w-5 h-5 hidden" id="code-contract-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19v-4m0 0h4m-4 0l-5 5M15 5v4m0 0h4m-4 0l-5-5M9 5v4m0 0H5m4 0l5-5M9 19v-4m0 0H5m4 0l5 5"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <textarea 
+                id="html-input"
+                class="w-full h-full flex-1 p-4 border border-gray-300 rounded-lg shadow-sm resize-none font-mono text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="ここにHTMLコードを入力してください..."
+                spellcheck="false"
+            ></textarea>
+        </div>
+
+        <!-- === プレビュー表示エリア === -->
+        <div id="preview-area" class="w-full lg:w-1/2 h-1/2 lg:h-full flex flex-col p-4 border-t-2 lg:border-t-0 lg:border-l-2 border-gray-300 transition-all">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-xl font-semibold text-gray-800">プレビュー</h2>
+                <!-- プレビューエリア最大化ボタン -->
+                <button id="toggle-preview-fullscreen" title="最大化/元に戻す" class="p-1.5 text-gray-600 hover:text-blue-500 hover:bg-gray-200 rounded-md transition-colors">
+                    <!-- 初期アイコン (最大化) -->
+                    <svg class="w-5 h-5" id="preview-expand-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m0 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5h-4m0 0v-4m0 4l-5-5"></path></svg>
+                    <!-- 縮小アイコン (最初は非表示) -->
+                    <svg class="w-5 h-5 hidden" id="preview-contract-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19v-4m0 0h4m-4 0l-5 5M15 5v4m0 0h4m-4 0l-5-5M9 5v4m0 0H5m4 0l5-5M9 19v-4m0 0H5m4 0l5 5"></path></svg>
+                </button>
+            </div>
+            <iframe 
+                id="preview-output"
+                class="w-full h-full flex-1 bg-white border border-gray-300 rounded-lg shadow-sm"
+                sandbox="allow-scripts allow-same-origin"
+                title="HTML Preview"
+            ></iframe>
+        </div>
+
+    </div>
+
+    <script>
+        // === DOM要素の取得 ===
+        const htmlInput = document.getElementById('html-input');
+        const previewOutput = document.getElementById('preview-output');
+
+        const codeArea = document.getElementById('code-area');
+        const previewArea = document.getElementById('preview-area');
+
+        const clearCodeBtn = document.getElementById('clear-code');
+        
+        const toggleCodeFsBtn = document.getElementById('toggle-code-fullscreen');
+        const codeExpandIcon = document.getElementById('code-expand-icon');
+        const codeContractIcon = document.getElementById('code-contract-icon');
+
+        const togglePreviewFsBtn = document.getElementById('toggle-preview-fullscreen');
+        const previewExpandIcon = document.getElementById('preview-expand-icon');
+        const previewContractIcon = document.getElementById('preview-contract-icon');
+
+        // デフォルトのサンプルコード
+        const defaultCode = `<!-- 
+  Tailwind CSSが利用可能です！
+  h1タグやpタグ、buttonタグなどを試してみましょう。
+-->
+<div class="p-6">
+    <h1 class="text-3xl font-bold text-blue-600">
+      こんにちは！
+    </h1>
+    <p class="mt-2 text-gray-700">
+      左のエリアにHTMLコードを書くと、ここに結果が表示されます。
+    </p>
+
+    <button class="mt-4 px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition-colors">
+      これはボタンです
+    </button>
+</div>
+`;
+
+        // === 関数定義 ===
+
+        // プレビューを更新する関数
+        function updatePreview() {
+            const htmlCode = htmlInput.value;
+            const iframeContent = `
+                <html>
+                <head>
+                    <script src="https://cdn.tailwindcss.com"><\/script>
+                </head>
+                <body class="p-2">
+                    ${htmlCode}
+                </body>
+                </html>
+            `;
+            const doc = previewOutput.contentWindow.document;
+            doc.open();
+            doc.write(iframeContent);
+            doc.close();
+        }
+
+        // コードエリアの最大化/縮小
+        function toggleCodeFullscreen() {
+            // プレビューエリアを隠す/表示する
+            previewArea.classList.toggle('hidden');
+            
+            // コードエリアのサイズをトグル
+            codeArea.classList.toggle('lg:w-1/2');
+            codeArea.classList.toggle('lg:w-full');
+            codeArea.classList.toggle('h-1/2');
+            codeArea.classList.toggle('h-full');
+
+            // アイコンを切り替え
+            codeExpandIcon.classList.toggle('hidden');
+            codeContractIcon.classList.toggle('hidden');
+
+            // もしプレビューが最大化されていたら、それを解除する
+            if (!previewArea.classList.contains('hidden') && codeArea.classList.contains('hidden')) {
+                togglePreviewFullscreen(); 
+            }
+        }
+
+        // プレビューエリアの最大化/縮小
+        function togglePreviewFullscreen() {
+            // コードエリアを隠す/表示する
+            codeArea.classList.toggle('hidden');
+
+            // プレビューエリアのサイズをトグル
+            previewArea.classList.toggle('lg:w-1/2');
+            previewArea.classList.toggle('lg:w-full');
+            previewArea.classList.toggle('h-1/2');
+            previewArea.classList.toggle('h-full');
+
+            // アイコンを切り替え
+            previewExpandIcon.classList.toggle('hidden');
+            previewContractIcon.classList.toggle('hidden');
+            
+            // もしコードが最大化されていたら、それを解除する
+             if (!codeArea.classList.contains('hidden') && previewArea.classList.contains('hidden')) {
+                toggleCodeFullscreen(); 
+            }
+        }
+
+        // コードをクリア
+        function clearCode() {
+            htmlInput.value = '';
+            updatePreview();
+        }
+
+        // === イベントリスナー ===
+
+        // 1. テキストエリアで入力があるたびにプレビューを更新
+        htmlInput.addEventListener('input', updatePreview);
+
+        // 2. ページ読み込み時にデフォルトコードをセットしてプレビュー
+        window.addEventListener('load', () => {
+            htmlInput.value = defaultCode;
+            updatePreview();
+        });
+
+        // 3. クリアボタン
+        clearCodeBtn.addEventListener('click', clearCode);
+
+        // 4. コード最大化ボタン
+        toggleCodeFsBtn.addEventListener('click', toggleCodeFullscreen);
+        
+        // 5. プレビュー最大化ボタン
+        togglePreviewFsBtn.addEventListener('click', togglePreviewFullscreen);
+
+    </script>
+
+</body>
+</html>
