@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>村人交易図鑑</title>
+<style>
+  :root{
+    --bg:#071027; --card:#0a1220; --muted:#9fb0c2; --accent:#6ee7b7;
+    font-family: "Inter","Noto Sans JP", system-ui, -apple-system, "Hiragino Kaku Gothic ProN","Yu Gothic", Meiryo, Arial;
+  }
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#03101a,#071827);color:#eaf6f2}
+  .wrap{max-width:1100px;margin:0 auto;padding:12px}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  h1{margin:0;font-size:18px}
+  p.subtitle{margin:0;color:var(--muted);font-size:13px}
+
+  /* toolbar */
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+  .btn{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);padding:8px 10px;border-radius:10px;color:var(--accent);font-weight:700;cursor:pointer}
+  .btn.ghost{color:var(--muted);border-style:dashed}
+  .input{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02);color:inherit}
+
+  /* layout */
+  .main{display:flex;gap:12px}
+  .sidebar{width:240px;min-width:180px}
+  .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+  .job-list{display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow:auto}
+  .job-item{padding:8px;border-radius:8px;cursor:pointer;background:transparent;border:1px solid transparent}
+  .job-item.active{background:rgba(255,255,255,0.02);border-color:rgba(255,255,255,0.04);color:var(--accent);font-weight:700}
+
+  .content{flex:1;display:flex;flex-direction:column;gap:10px}
+  .levels{display:flex;gap:6px;flex-wrap:wrap}
+  .level-btn{padding:6px 8px;border-radius:999px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);cursor:pointer;color:var(--muted)}
+  .level-btn.active{background:var(--accent);color:#042; font-weight:700}
+
+  .columns{display:flex;gap:12px}
+  .col{flex:1;background:rgba(255,255,255,0.02);padding:10px;border-radius:10px;min-height:150px}
+  .col h3{margin:0 0 8px 0}
+  .item{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px;margin-bottom:8px;background:rgba(255,255,255,0.01)}
+  .thumb{width:48px;height:48px;border-radius:8px;object-fit:cover;background:rgba(0,0,0,0.2)}
+  .itmeta{flex:1}
+  .itmeta .name{font-weight:700}
+  .itmeta .sub{color:var(--muted);font-size:13px;margin-top:4px}
+  .it-actions{display:flex;gap:6px}
+  .smallbtn{padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--muted);cursor:pointer}
+
+  /* footer controls */
+  .json-area{margin-top:10px;display:flex;gap:8px;flex-direction:column}
+  textarea#jsonInput{min-height:120px;border-radius:8px;padding:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(0,0,0,0.2);color:inherit}
+
+  /* modal */
+  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:20px;z-index:60}
+  .modal.open{display:flex}
+  .card{background:#071827;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);max-width:640px;width:100%}
+  .row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+  label{color:var(--muted);font-size:13px}
+  input[type="text"].small,input[type="url"].small{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02);color:inherit}
+
+  /* responsive */
+  @media(max-width:900px){
+    .main{flex-direction:column}
+    .sidebar{width:100%}
+    .levels{overflow:auto}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>🧑‍🌾 村人交易図鑑</h1>
+      <p class="subtitle">職業・レベル別に「売るもの」「買えるもの」を左右で確認（JSON読み込みでオフライン可）</p>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <input id="search" class="input" placeholder="検索：職業 / レベル / アイテム名" style="min-width:240px" />
+    <button class="btn ghost" id="loadSample">サンプル読み込み</button>
+    <label class="btn ghost" style="display:inline-flex;align-items:center;gap:8px">
+      JSON読み込み
+      <input id="fileInput" type="file" accept=".json" style="display:none">
+    </label>
+    <button class="btn" id="pasteJsonBtn">貼り付けから読み込む</button>
+    <button class="btn" id="exportJson">JSONエクスポート</button>
+    <button class="btn ghost" id="clearAll">全てクリア</button>
+  </div>
+
+  <div class="main">
+    <aside class="sidebar">
+      <div class="panel">
+        <div style="font-weight:700;margin-bottom:8px">職業一覧</div>
+        <div class="job-list" id="jobList"></div>
+        <div style="margin-top:10px;color:var(--muted);font-size:13px">職業を選んでレベルを表示します</div>
+      </div>
+    </aside>
+
+    <section class="content">
+      <div class="panel" style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="font-weight:700" id="currentJobLabel">職業を選択してください</div>
+          <div class="levels" id="levelTabs"></div>
+          <div style="margin-left:auto;color:var(--muted)" id="countInfo"></div>
+        </div>
+
+        <div class="columns">
+          <div class="col" id="sellCol">
+            <h3>売るもの → エメラルド</h3>
+            <div id="sellList"></div>
+          </div>
+          <div class="col" id="buyCol">
+            <h3>エメラルドで買えるもの</h3>
+            <div id="buyList"></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn ghost" id="openImgMap">画像マッピング</button>
+          <button class="btn ghost" id="copyView">表示をコピー</button>
+        </div>
+      </div>
+
+      <div class="panel json-area">
+        <div style="display:flex;gap:8px;align-items:center;justify-content:space-between">
+          <div style="font-weight:700">JSON（貼り付けて読み込み / 編集 → エクスポート）</div>
+          <div style="color:var(--muted);font-size:13px">ローカル保存：自動</div>
+        </div>
+
+        <textarea id="jsonInput" placeholder='ここに JSON を貼り付け → 「貼り付けから読み込む」を押します'></textarea>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn ghost" id="applyJson">反映する</button>
+          <button class="btn" id="downloadJson">ダウンロード</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- modal for image mapping -->
+<div class="modal" id="imgModal">
+  <div class="card">
+    <h3>画像マッピング（アイテム名 → 画像URL / ローカル画像）</h3>
+    <div id="imgMapList" style="max-height:50vh;overflow:auto;margin-top:8px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button class="btn ghost" id="closeImgModal">閉じる</button>
+      <button class="btn" id="saveImgMap">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Villager Catalog app
+   - JSON structure assumed:
+   {
+     "司書": {
+       "新米": {
+         "エメラルドになるもの": [ { "item":"紙", "count":24, "emerald":1? } , ... ],
+         "エメラルドで買えるもの": [ { "item":"本", "count":1, "emerald":2? } , ... ]
+       },
+       "見習い": { ... }
+     },
+     "農民": { ... }
+   }
+*/
+const STORAGE_KEY = 'villager_catalog_v1';
+let db = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || {};
+let imgMap = JSON.parse(localStorage.getItem(STORAGE_KEY + '_imgmap') || '{}');
+
+const els = {
+  jobList: document.getElementById('jobList'),
+  levelTabs: document.getElementById('levelTabs'),
+  currentJobLabel: document.getElementById('currentJobLabel'),
+  sellList: document.getElementById('sellList'),
+  buyList: document.getElementById('buyList'),
+  jsonInput: document.getElementById('jsonInput'),
+  search: document.getElementById('search'),
+  fileInput: document.getElementById('fileInput'),
+  countInfo: document.getElementById('countInfo'),
+  imgModal: document.getElementById('imgModal'),
+  imgMapList: document.getElementById('imgMapList')
+};
+
+let state = { job: null, level: null, filteredItems: [] };
+
+/* helpers */
+function saveDb(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
+function saveImgMap(){ localStorage.setItem(STORAGE_KEY + '_imgmap', JSON.stringify(imgMap)); }
+function tryGetImage(itemName){
+  // priority: explicit mapping -> try known CDN (not guaranteed offline) -> placeholder
+  if(imgMap[itemName]) return imgMap[itemName];
+  // fallback placeholder (SVG data URI with text)
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='#10292b'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='10' fill='#8fb9b0'>${escapeHtml(itemName).slice(0,8)}</text></svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+/* render UI */
+function renderJobs(){
+  els.jobList.innerHTML = '';
+  const jobs = Object.keys(db).sort((a,b)=> a.localeCompare(b,'ja'));
+  if(jobs.length===0){
+    els.jobList.innerHTML = `<div style="color:var(--muted)">職業がありません。JSONを読み込むか、サンプルを読み込んでください。</div>`;
+    return;
+  }
+  jobs.forEach(j=>{
+    const btn = document.createElement('button');
+    btn.className = 'job-item';
+    if(state.job === j) btn.classList.add('active');
+    btn.textContent = j;
+    btn.onclick = ()=> { state.job = j; state.level = null; renderLevels(); renderContent(); renderJobs(); };
+    els.jobList.appendChild(btn);
+  });
+}
+
+function renderLevels(){
+  els.levelTabs.innerHTML = '';
+  if(!state.job) { els.currentJobLabel.textContent = '職業を選択してください'; return; }
+  els.currentJobLabel.textContent = state.job;
+  const levels = Object.keys(db[state.job] || {});
+  levels.forEach(l=>{
+    const b = document.createElement('button');
+    b.className = 'level-btn' + (state.level===l? ' active':'');
+    b.textContent = l;
+    b.onclick = ()=> { state.level = l; renderContent(); renderLevels(); };
+    els.levelTabs.appendChild(b);
+  });
+  // auto-select first level if none
+  if(!state.level && levels.length) state.level = levels[0];
+  // show count info
+  els.countInfo.textContent = `levels: ${levels.length}`;
+}
+
+function renderContent(){
+  els.sellList.innerHTML = '';
+  els.buyList.innerHTML = '';
+  if(!state.job || !state.level){ els.sellList.innerHTML = '<div style="color:var(--muted)">職業とレベルを選んでください</div>'; els.buyList.innerHTML = ''; return; }
+  const node = db[state.job] && db[state.job][state.level];
+  if(!node){ els.sellList.innerHTML = '<div style="color:var(--muted)">データなし</div>'; els.buyList.innerHTML = ''; return; }
+
+  // items arrays may be arrays of objects or strings
+  const sell = node['エメラルドになるもの'] || [];
+  const buy = node['エメラルドで買えるもの'] || [];
+
+  const q = (els.search.value || '').trim().toLowerCase();
+
+  function renderList(arr, container, side){
+    const list = Array.isArray(arr) ? arr : [];
+    let shown = 0;
+    list.forEach(it=>{
+      // normalize
+      let name = '', count = '', emerald = null;
+      if(typeof it === 'string'){ name = it; count = ''; }
+      else{ name = it.item || it.name || ''; count = it.count || it.qty || ''; emerald = (it.emerald!==undefined? it.emerald : it.cost || null); }
+      if(q){
+        const target = (name + ' ' + (it.note || '') + ' ' + (state.job || '') + ' ' + (state.level || '')).toLowerCase();
+        if(!target.includes(q)) return;
+      }
+      shown++;
+      const row = document.createElement('div'); row.className='item';
+      const img = document.createElement('img'); img.className='thumb'; img.src = tryGetImage(name);
+      const meta = document.createElement('div'); meta.className='itmeta';
+      meta.innerHTML = `<div class="name">${escapeHtml(name)} ${count? (' × '+escapeHtml(count)) : ''}</div>
+                        <div class="sub">${emerald!==null? ('エメラルド: '+escapeHtml(String(emerald))) : ''}</div>`;
+      const actions = document.createElement('div'); actions.className='it-actions';
+      const setImgBtn = document.createElement('button'); setImgBtn.className='smallbtn'; setImgBtn.textContent='画像設定';
+      setImgBtn.onclick = ()=> openImgEditor(name);
+      const copyBtn = document.createElement('button'); copyBtn.className='smallbtn'; copyBtn.textContent='コピー';
+      copyBtn.onclick = ()=> { navigator.clipboard.writeText(`${name} ${count?('×'+count):''} → ${emerald!==null? emerald+' E':''}`); alert('コピーしました'); };
+      actions.appendChild(setImgBtn); actions.appendChild(copyBtn);
+
+      row.appendChild(img); row.appendChild(meta); row.appendChild(actions);
+      container.appendChild(row);
+    });
+    if(shown===0) container.innerHTML = `<div style="color:var(--muted)">該当する取引はありません</div>`;
+  }
+
+  renderList(sell, els.sellList, 'sell');
+  renderList(buy, els.buyList, 'buy');
+}
+
+/* import/export JSON */
+function applyJsonText(txt){
+  try{
+    const obj = JSON.parse(txt);
+    db = obj;
+    saveDb();
+    state.job = null; state.level = null;
+    renderJobs(); renderLevels(); renderContent();
+    alert('JSON を読み込みました（ローカル保存済み）。');
+  }catch(e){
+    alert('JSON の読み込みに失敗しました：' + e.message);
+  }
+}
+
+/* file input */
+els.fileInput.addEventListener('change', (ev)=>{
+  const f = ev.target.files[0];
+  if(!f) return;
+  const fr = new FileReader();
+  fr.onload = ()=> { applyJsonText(fr.result); els.fileInput.value = ''; };
+  fr.readAsText(f);
+});
+
+/* paste JSON button */
+document.getElementById('pasteJsonBtn').addEventListener('click', ()=>{
+  const txt = els.jsonInput.value.trim();
+  if(!txt){ alert('JSON を貼り付けてください。'); return; }
+  applyJsonText(txt);
+});
+
+/* apply json */
+document.getElementById('applyJson').addEventListener('click', ()=>{
+  const txt = els.jsonInput.value.trim();
+  if(!txt){ alert('JSON を貼り付けてください。'); return; }
+  applyJsonText(txt);
+});
+
+/* download JSON */
+document.getElementById('downloadJson').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='villager_catalog.json'; a.click(); URL.revokeObjectURL(url);
+});
+
+/* export button */
+document.getElementById('exportJson').addEventListener('click', ()=>{
+  const txt = JSON.stringify(db, null, 2);
+  navigator.clipboard.writeText(txt).then(()=> alert('JSON をコピーしました'));
+});
+
+/* clear all */
+document.getElementById('clearAll').addEventListener('click', ()=>{
+  if(!confirm('全データをクリアしますか？（復元不可）')) return;
+  db = {}; imgMap = {}; saveDb(); saveImgMap(); renderJobs(); renderLevels(); renderContent();
+});
+
+/* sample data */
+document.getElementById('loadSample').addEventListener('click', ()=>{
+  const sample = {
+    "司書": {
+      "新米": {
+        "エメラルドになるもの": [
+          {"item":"紙","count":24},
+          {"item":"本","count":6}
+        ],
+        "エメラルドで買えるもの": [
+          {"item":"本と羽ペン","count":1,"emerald":1},
+          {"item":"地図","count":1,"emerald":2}
+        ]
+      },
+      "達人": {
+        "エメラルドになるもの": [
+          {"item":"紙","count":8},
+          {"item":"羽根","count":4}
+        ],
+        "エメラルドで買えるもの": [
+          {"item":"エンチャントされた本","count":1,"emerald":12}
+        ]
+      }
+    },
+    "農民": {
+      "新米": {
+        "エメラルドになるもの":[ {"item":"小麦","count":20,"emerald":1} ],
+        "エメラルドで買えるもの":[ {"item":"パン","count":6,"emerald":1} ]
+      }
+    }
+  };
+  db = sample; saveDb(); state.job = null; state.level = null; renderJobs(); renderLevels(); renderContent();
+  alert('サンプルを読み込みました。JSONを編集して独自データを反映できます。');
+});
+
+/* search */
+els.search.addEventListener('input', ()=> renderContent());
+
+/* copy view */
+document.getElementById('copyView').addEventListener('click', ()=>{
+  // prepare a readable text of current view
+  if(!state.job || !state.level){ alert('職業とレベルを選んでください'); return; }
+  const node = db[state.job][state.level];
+  const lines = [];
+  lines.push(`${state.job} — ${state.level}`);
+  lines.push('【売るもの → エメラルド】');
+  (node['エメラルドになるもの']||[]).forEach(it=>{
+    const name = it.item || it.name || it;
+    const c = it.count || it.qty || '';
+    const e = it.emerald || it.cost || '';
+    lines.push(`- ${name} ${c?('×'+c):''} ${e?('→ '+e+'E'):''}`);
+  });
+  lines.push('【エメラルドで買えるもの】');
+  (node['エメラルドで買えるもの']||[]).forEach(it=>{
+    const name = it.item || it.name || it;
+    const c = it.count || it.qty || '';
+    const e = it.emerald || it.cost || '';
+    lines.push(`- ${name} ${c?('×'+c):''} ${e?('← '+e+'E'):''}`);
+  });
+  navigator.clipboard.writeText(lines.join('\\n')).then(()=> alert('表示内容をコピーしました'));
+});
+
+/* image mapping modal */
+document.getElementById('openImgMap').addEventListener('click', ()=> {
+  openImgModal();
+});
+
+document.getElementById('closeImgModal').addEventListener('click', ()=> {
+  els.imgModal.classList.remove('open');
+});
+
+document.getElementById('saveImgMap').addEventListener('click', ()=> {
+  // read inputs and save imgMap
+  const inputs = els.imgMapList.querySelectorAll('input[data-name]');
+  inputs.forEach(inp=>{
+    const name = inp.dataset.name;
+    const val = inp.value.trim();
+    if(val) imgMap[name] = val;
+    else delete imgMap[name];
+  });
+  saveImgMap();
+  els.imgModal.classList.remove('open');
+  renderContent();
+  alert('画像マップを保存しました（localStorage）');
+});
+
+function openImgModal(){
+  els.imgMapList.innerHTML = '';
+  // collect all item names from db
+  const names = new Set();
+  Object.keys(db).forEach(job=>{
+    Object.keys(db[job]).forEach(level=>{
+      (db[job][level]['エメラルドになるもの']||[]).forEach(it=> names.add(typeof it==='string'?it:(it.item||it.name)));
+      (db[job][level]['エメラルドで買えるもの']||[]).forEach(it=> names.add(typeof it==='string'?it:(it.item||it.name)));
+    });
+  });
+  if(names.size===0){ els.imgMapList.innerHTML = '<div style="color:var(--muted)">アイテムが見つかりません。JSON を読み込んでください。</div>'; }
+  Array.from(names).sort((a,b)=> a.localeCompare(b,'ja')).forEach(n=>{
+    const row = document.createElement('div'); row.className='row';
+    row.innerHTML = `<label style="min-width:120px">${escapeHtml(n)}</label>
+      <input data-name="${escapeHtml(n)}" value="${imgMap[n]||''}" placeholder="画像URL または local base64 (ドラッグ不可) " style="flex:1" />
+      <input type="file" accept="image/*" data-file="${escapeHtml(n)}" />`;
+    els.imgMapList.appendChild(row);
+    const fileInput = row.querySelector('input[type="file"]');
+    const textInput = row.querySelector('input[data-name]');
+    fileInput.addEventListener('change', (ev)=>{
+      const f = ev.target.files[0];
+      if(!f) return;
+      const fr = new FileReader();
+      fr.onload = ()=> { textInput.value = fr.result; };
+      fr.readAsDataURL(f);
+    });
+  });
+  els.imgModal.classList.add('open');
+}
+
+/* open editor for single item */
+function openImgEditor(itemName){
+  // quick modal that sets mapping for one item
+  const val = imgMap[itemName] || '';
+  const url = prompt(itemName + ' の画像URL または local画像（選択OK）。空にすると削除されます。', val);
+  if(url === null) return;
+  if(url.trim()) imgMap[itemName] = url.trim();
+  else delete imgMap[itemName];
+  saveImgMap();
+  renderContent();
+}
+
+/* open pasted JSON prompt */
+document.getElementById('pasteJsonBtn').addEventListener('click', ()=> {
+  const txt = document.getElementById('jsonInput').value.trim();
+  if(!txt){ alert('左のテキストエリアに JSON を貼り付けてください。'); return; }
+  applyJsonText(txt);
+});
+
+/* load from localStorage on startup */
+(function init(){
+  renderJobs(); renderLevels(); renderContent();
+})();
+
+/* keyboard: Ctrl+V into jsonInput (for convenience) */
+document.addEventListener('keydown', (e)=> {
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === 'v') {
+    // do nothing special — user can paste into area
+  }
+});
+</script>
+</body>
+</html>
