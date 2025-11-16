@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>村人交易図鑑</title>
+<title>村人交易図鑑 (検索強化版)</title>
 <style>
   :root{
     --bg:#071027; --card:#0a1220; --muted:#9fb0c2; --accent:#6ee7b7;
@@ -36,8 +36,21 @@
 
   .columns{display:flex;gap:12px}
   .col{flex:1;background:rgba(255,255,255,0.02);padding:10px;border-radius:10px;min-height:150px}
-  .col h3{margin:0 0 8px 0}
-  .item{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px;margin-bottom:8px;background:rgba(255,255,255,0.01)}
+  .col h3{
+    margin:0 0 8px 0;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .col h3 .smallbtn {
+    font-size: 16px;
+    font-weight: 700;
+    padding: 2px 8px;
+  }
+  .item{
+    display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px;margin-bottom:8px;background:rgba(255,255,255,0.01);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
   .thumb{width:48px;height:48px;border-radius:8px;object-fit:cover;background:rgba(0,0,0,0.2)}
   .itmeta{flex:1}
   .itmeta .name{font-weight:700}
@@ -45,17 +58,53 @@
   .it-actions{display:flex;gap:6px}
   .smallbtn{padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--muted);cursor:pointer}
 
+
   /* footer controls */
   .json-area{margin-top:10px;display:flex;gap:8px;flex-direction:column}
   textarea#jsonInput{min-height:120px;border-radius:8px;padding:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(0,0,0,0.2);color:inherit}
 
   /* modal */
-  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:20px;z-index:60}
-  .modal.open{display:flex}
-  .card{background:#071827;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);max-width:640px;width:100%}
+  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:20px;z-index:60;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);opacity:0;transition:opacity 0.2s ease}
+  .modal.open{display:flex;opacity:1}
+  .card{
+    background:#071827;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);max-width:640px;width:100%;
+    transform: scale(0.95); transition: transform 0.2s ease;
+  }
+  .modal.open .card { transform: scale(1); }
   .row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
   label{color:var(--muted);font-size:13px}
-  input[type="text"].small,input[type="url"].small{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02);color:inherit}
+  input[type="text"].small, input[type="number"].small, input[type="url"].small{
+    padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);
+    background:rgba(255,255,255,0.02);color:inherit;
+    min-width: 60px;
+  }
+  .form-group {
+    display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px;
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    padding: 12px 20px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #042;
+    font-weight: 700;
+    z-index: 100;
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+  #toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  #toast.error {
+    background: #e76e6e;
+    color: #fff;
+  }
 
   /* responsive */
   @media(max-width:900px){
@@ -63,26 +112,29 @@
     .sidebar{width:100%}
     .levels{overflow:auto}
   }
+  @media(max-width:500px){
+    .columns{flex-direction:column}
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div>
-      <h1>🧑‍🌾 村人交易図鑑</h1>
+      <h1>🧑‍🌾 村人交易図鑑 (検索強化版)</h1>
       <p class="subtitle">職業・レベル別に「売るもの」「買えるもの」を左右で確認（JSON読み込みでオフライン可）</p>
     </div>
   </header>
 
   <div class="toolbar">
-    <input id="search" class="input" placeholder="検索：職業 / レベル / アイテム名" style="min-width:240px" />
+    <!-- === 改善点：placeholderを変更 === -->
+    <input id="search" class="input" placeholder="アイテム名 / 個数 / エメラルド数" style="min-width:240px" />
     <button class="btn ghost" id="loadSample">サンプル読み込み</button>
     <label class="btn ghost" style="display:inline-flex;align-items:center;gap:8px">
       JSON読み込み
       <input id="fileInput" type="file" accept=".json" style="display:none">
     </label>
-    <button class="btn" id="pasteJsonBtn">貼り付けから読み込む</button>
-    <button class="btn" id="exportJson">JSONエクスポート</button>
+    <button class="btn" id="exportJson">JSONをコピー</button>
     <button class="btn ghost" id="clearAll">全てクリア</button>
   </div>
 
@@ -90,6 +142,8 @@
     <aside class="sidebar">
       <div class="panel">
         <div style="font-weight:700;margin-bottom:8px">職業一覧</div>
+        <!-- === 改善点：職業検索ボックスを追加 === -->
+        <input id="searchJobs" class="input" placeholder="職業名で絞り込み..." style="width:100%; box-sizing: border-box; margin-bottom: 8px;">
         <div class="job-list" id="jobList"></div>
         <div style="margin-top:10px;color:var(--muted);font-size:13px">職業を選んでレベルを表示します</div>
       </div>
@@ -105,11 +159,17 @@
 
         <div class="columns">
           <div class="col" id="sellCol">
-            <h3>売るもの → エメラルド</h3>
+            <h3>
+              売るもの → エメラルド
+              <button class="smallbtn" id="addSellBtn" title="「売る」取引を追加" style="display:none;">+</button>
+            </h3>
             <div id="sellList"></div>
           </div>
           <div class="col" id="buyCol">
-            <h3>エメラルドで買えるもの</h3>
+            <h3>
+              エメラルドで買えるもの
+              <button class="smallbtn" id="addBuyBtn" title="「買う」取引を追加" style="display:none;">+</button>
+            </h3>
             <div id="buyList"></div>
           </div>
         </div>
@@ -126,9 +186,9 @@
           <div style="color:var(--muted);font-size:13px">ローカル保存：自動</div>
         </div>
 
-        <textarea id="jsonInput" placeholder='ここに JSON を貼り付け → 「貼り付けから読み込む」を押します'></textarea>
+        <textarea id="jsonInput" placeholder='ここに JSON を貼り付け → 「反映する」を押します'></textarea>
         <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button class="btn ghost" id="applyJson">反映する</button>
+          <button class="btn" id="applyJson">反映する</button>
           <button class="btn" id="downloadJson">ダウンロード</button>
         </div>
       </div>
@@ -148,20 +208,59 @@
   </div>
 </div>
 
+<!-- Toast用 HTML -->
+<div id="toast"></div>
+
+<!-- 取引追加モーダル -->
+<div class="modal" id="addTradeModal">
+  <div class="card">
+    <h3 id="addTradeTitle">取引の追加</h3>
+    <div class="form-group">
+      <label for="itemNameInput">アイテム名</label>
+      <input type="text" id="itemNameInput" class="small" placeholder="例：紙" />
+    </div>
+    <div class="row">
+      <div class="form-group" style="flex:1">
+        <label for="itemCountInput">個数</label>
+        <input type="number" id="itemCountInput" class="small" placeholder="例：24" />
+      </div>
+      <div class="form-group" style="flex:1">
+        <label for="itemEmeraldInput">エメラルド</label>
+        <input type="number" id="itemEmeraldInput" class="small" placeholder="例：1" />
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button class="btn ghost" id="closeAddTradeModal">閉じる</button>
+      <button class="btn" id="saveTradeBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 単一画像編集モーダル -->
+<div class="modal" id="imgEditModal">
+  <div class="card">
+    <h3>画像設定： <span id="imgEditItemName"></span></h3>
+    <input type="hidden" id="imgEditHiddenName" />
+    
+    <div class="form-group">
+      <label for="imgEditUrlInput">画像URL または Base64</label>
+      <input type="text" id="imgEditUrlInput" class="small" placeholder="画像URLをペースト" style="width:100%" />
+    </div>
+    <div class="form-group">
+      <label for="imgEditFileInput">またはローカルファイルを選択</label>
+      <input type="file" id="imgEditFileInput" accept="image/*" />
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button class="btn ghost" id="closeImgEditModal">閉じる</button>
+      <button class="btn" id="saveImgEditBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+
 <script>
-/* Villager Catalog app
-   - JSON structure assumed:
-   {
-     "司書": {
-       "新米": {
-         "エメラルドになるもの": [ { "item":"紙", "count":24, "emerald":1? } , ... ],
-         "エメラルドで買えるもの": [ { "item":"本", "count":1, "emerald":2? } , ... ]
-       },
-       "見習い": { ... }
-     },
-     "農民": { ... }
-   }
-*/
+/* Villager Catalog app (v3 - Search Enhanced) */
 const STORAGE_KEY = 'villager_catalog_v1';
 let db = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || {};
 let imgMap = JSON.parse(localStorage.getItem(STORAGE_KEY + '_imgmap') || '{}');
@@ -177,18 +276,47 @@ const els = {
   fileInput: document.getElementById('fileInput'),
   countInfo: document.getElementById('countInfo'),
   imgModal: document.getElementById('imgModal'),
-  imgMapList: document.getElementById('imgMapList')
+  imgMapList: document.getElementById('imgMapList'),
+  
+  toast: document.getElementById('toast'),
+  addTradeModal: document.getElementById('addTradeModal'),
+  addTradeTitle: document.getElementById('addTradeTitle'),
+  itemNameInput: document.getElementById('itemNameInput'),
+  itemCountInput: document.getElementById('itemCountInput'),
+  itemEmeraldInput: document.getElementById('itemEmeraldInput'),
+  
+  imgEditModal: document.getElementById('imgEditModal'),
+  imgEditItemName: document.getElementById('imgEditItemName'),
+  imgEditHiddenName: document.getElementById('imgEditHiddenName'),
+  imgEditUrlInput: document.getElementById('imgEditUrlInput'),
+  imgEditFileInput: document.getElementById('imgEditFileInput'),
+
+  addSellBtn: document.getElementById('addSellBtn'),
+  addBuyBtn: document.getElementById('addBuyBtn'),
+  
+  // === 改善点：職業検索ボックス ===
+  searchJobs: document.getElementById('searchJobs')
+  // === /改善点 ===
 };
 
-let state = { job: null, level: null, filteredItems: [] };
+let state = { job: null, level: null, newTradeSide: null };
+let toastTimer;
+
+/* Toast */
+function showToast(message, isError = false) {
+  clearTimeout(toastTimer);
+  els.toast.textContent = message;
+  els.toast.className = 'show' + (isError ? ' error' : '');
+  toastTimer = setTimeout(() => {
+    els.toast.classList.remove('show');
+  }, 2500);
+}
 
 /* helpers */
 function saveDb(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
 function saveImgMap(){ localStorage.setItem(STORAGE_KEY + '_imgmap', JSON.stringify(imgMap)); }
 function tryGetImage(itemName){
-  // priority: explicit mapping -> try known CDN (not guaranteed offline) -> placeholder
   if(imgMap[itemName]) return imgMap[itemName];
-  // fallback placeholder (SVG data URI with text)
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='#10292b'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='10' fill='#8fb9b0'>${escapeHtml(itemName).slice(0,8)}</text></svg>`;
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
@@ -197,17 +325,44 @@ function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (
 /* render UI */
 function renderJobs(){
   els.jobList.innerHTML = '';
-  const jobs = Object.keys(db).sort((a,b)=> a.localeCompare(b,'ja'));
+  
+  // === 改善点：職業検索のロジック ===
+  const qJob = (els.searchJobs.value || '').trim().toLowerCase();
+  const allJobs = Object.keys(db).sort((a,b)=> a.localeCompare(b,'ja'));
+  const jobs = qJob ? allJobs.filter(j => j.toLowerCase().includes(qJob)) : allJobs;
+  // === /改善点 ===
+
   if(jobs.length===0){
-    els.jobList.innerHTML = `<div style="color:var(--muted)">職業がありません。JSONを読み込むか、サンプルを読み込んでください。</div>`;
+    els.jobList.innerHTML = `<div style="color:var(--muted)">職業がありません。</div>`;
     return;
   }
+  
+  // 検索で絞り込まれた結果、選択中のjobが消えたらリセット
+  if(state.job && !jobs.includes(state.job)) {
+    state.job = null;
+    state.level = null;
+    renderLevels();
+    renderContent();
+  }
+  
   jobs.forEach(j=>{
     const btn = document.createElement('button');
     btn.className = 'job-item';
     if(state.job === j) btn.classList.add('active');
     btn.textContent = j;
-    btn.onclick = ()=> { state.job = j; state.level = null; renderLevels(); renderContent(); renderJobs(); };
+    btn.onclick = ()=> { 
+      if (state.job === j) {
+        // 既に選択されている職業をもう一度クリックしたら、選択解除
+        state.job = null;
+        state.level = null;
+      } else {
+        state.job = j;
+        state.level = null;
+      }
+      renderLevels(); 
+      renderContent(); 
+      renderJobs(); // 自身のactive状態を更新するために再描画
+    };
     els.jobList.appendChild(btn);
   });
 }
@@ -221,52 +376,98 @@ function renderLevels(){
     const b = document.createElement('button');
     b.className = 'level-btn' + (state.level===l? ' active':'');
     b.textContent = l;
-    b.onclick = ()=> { state.level = l; renderContent(); renderLevels(); };
+    b.onclick = ()=> { 
+      if(state.level === l) {
+        // 既に選択されているレベルをクリックしたら、選択解除
+        state.level = null;
+      } else {
+        state.level = l;
+      }
+      renderContent(); 
+      renderLevels(); // 自身のactive状態を更新するために再描画
+    };
     els.levelTabs.appendChild(b);
   });
-  // auto-select first level if none
-  if(!state.level && levels.length) state.level = levels[0];
-  // show count info
+  if(!state.level && levels.length) {
+    // state.level = levels[0]; // 自動選択をオフにする
+  }
   els.countInfo.textContent = `levels: ${levels.length}`;
 }
 
 function renderContent(){
   els.sellList.innerHTML = '';
   els.buyList.innerHTML = '';
-  if(!state.job || !state.level){ els.sellList.innerHTML = '<div style="color:var(--muted)">職業とレベルを選んでください</div>'; els.buyList.innerHTML = ''; return; }
+  els.addSellBtn.style.display = 'none';
+  els.addBuyBtn.style.display = 'none';
+
+  if(!state.job){ 
+    els.sellList.innerHTML = '<div style="color:var(--muted)">職業を選んでください</div>'; 
+    els.buyList.innerHTML = ''; 
+    return; 
+  }
+  
+  if(!state.level){
+    els.sellList.innerHTML = '<div style="color:var(--muted)">レベルを選んでください</div>'; 
+    els.buyList.innerHTML = ''; 
+    return; 
+  }
+  
   const node = db[state.job] && db[state.job][state.level];
   if(!node){ els.sellList.innerHTML = '<div style="color:var(--muted)">データなし</div>'; els.buyList.innerHTML = ''; return; }
 
-  // items arrays may be arrays of objects or strings
+  els.addSellBtn.style.display = 'inline-block';
+  els.addBuyBtn.style.display = 'inline-block';
+
   const sell = node['エメラルドになるもの'] || [];
   const buy = node['エメラルドで買えるもの'] || [];
-
+  
+  // === 改善点：アイテム検索のロジック (AND検索) ===
   const q = (els.search.value || '').trim().toLowerCase();
+  const keywords = q.split(/\s+/).filter(Boolean); // スペース区切りでキーワード配列を作成
+  // === /改善点 ===
 
-  function renderList(arr, container, side){
+  function renderList(arr, container, side, listKey){
     const list = Array.isArray(arr) ? arr : [];
     let shown = 0;
-    list.forEach(it=>{
-      // normalize
+    list.forEach((it, index)=>{
       let name = '', count = '', emerald = null;
       if(typeof it === 'string'){ name = it; count = ''; }
       else{ name = it.item || it.name || ''; count = it.count || it.qty || ''; emerald = (it.emerald!==undefined? it.emerald : it.cost || null); }
-      if(q){
-        const target = (name + ' ' + (it.note || '') + ' ' + (state.job || '') + ' ' + (state.level || '')).toLowerCase();
-        if(!target.includes(q)) return;
+      
+      // === 改善点：アイテム検索のロジック (AND検索) ===
+      if(keywords.length > 0){
+        // 検索対象をアイテム名、個数、エメラルド数に限定
+        const target = (name + ' ' + (it.note || '') + ' ' + count + ' ' + (emerald !== null ? emerald : '')).toLowerCase();
+        // すべてのキーワードが target に含まれているかチェック
+        const isMatch = keywords.every(kw => target.includes(kw));
+        if(!isMatch) return;
       }
+      // === /改善点 ===
+      
       shown++;
       const row = document.createElement('div'); row.className='item';
       const img = document.createElement('img'); img.className='thumb'; img.src = tryGetImage(name);
       const meta = document.createElement('div'); meta.className='itmeta';
       meta.innerHTML = `<div class="name">${escapeHtml(name)} ${count? (' × '+escapeHtml(count)) : ''}</div>
                         <div class="sub">${emerald!==null? ('エメラルド: '+escapeHtml(String(emerald))) : ''}</div>`;
+      
       const actions = document.createElement('div'); actions.className='it-actions';
-      const setImgBtn = document.createElement('button'); setImgBtn.className='smallbtn'; setImgBtn.textContent='画像設定';
+      
+      const setImgBtn = document.createElement('button'); setImgBtn.className='smallbtn'; setImgBtn.textContent='画像';
+      setImgBtn.title = '画像設定';
       setImgBtn.onclick = ()=> openImgEditor(name);
+      
       const copyBtn = document.createElement('button'); copyBtn.className='smallbtn'; copyBtn.textContent='コピー';
-      copyBtn.onclick = ()=> { navigator.clipboard.writeText(`${name} ${count?('×'+count):''} → ${emerald!==null? emerald+' E':''}`); alert('コピーしました'); };
-      actions.appendChild(setImgBtn); actions.appendChild(copyBtn);
+      copyBtn.onclick = ()=> { 
+        navigator.clipboard.writeText(`${name} ${count?('×'+count):''} → ${emerald!==null? emerald+' E':''}`); 
+        showToast('コピーしました'); 
+      };
+
+      const deleteBtn = document.createElement('button'); deleteBtn.className='smallbtn'; deleteBtn.textContent='削除';
+      deleteBtn.title = 'この取引を削除';
+      deleteBtn.onclick = () => deleteTrade(listKey, index, row);
+
+      actions.appendChild(setImgBtn); actions.appendChild(copyBtn); actions.appendChild(deleteBtn);
 
       row.appendChild(img); row.appendChild(meta); row.appendChild(actions);
       container.appendChild(row);
@@ -274,8 +475,8 @@ function renderContent(){
     if(shown===0) container.innerHTML = `<div style="color:var(--muted)">該当する取引はありません</div>`;
   }
 
-  renderList(sell, els.sellList, 'sell');
-  renderList(buy, els.buyList, 'buy');
+  renderList(sell, els.sellList, 'sell', 'エメラルドになるもの');
+  renderList(buy, els.buyList, 'buy', 'エメラルドで買えるもの');
 }
 
 /* import/export JSON */
@@ -286,13 +487,14 @@ function applyJsonText(txt){
     saveDb();
     state.job = null; state.level = null;
     renderJobs(); renderLevels(); renderContent();
-    alert('JSON を読み込みました（ローカル保存済み）。');
+    els.searchJobs.value = ''; // 職業検索をリセット
+    els.search.value = ''; // アイテム検索をリセット
+    showToast('JSON を読み込みました（ローカル保存済み）。');
   }catch(e){
-    alert('JSON の読み込みに失敗しました：' + e.message);
+    showToast('JSON の読み込みに失敗しました：' + e.message, true);
   }
 }
 
-/* file input */
 els.fileInput.addEventListener('change', (ev)=>{
   const f = ev.target.files[0];
   if(!f) return;
@@ -301,112 +503,72 @@ els.fileInput.addEventListener('change', (ev)=>{
   fr.readAsText(f);
 });
 
-/* paste JSON button */
-document.getElementById('pasteJsonBtn').addEventListener('click', ()=>{
-  const txt = els.jsonInput.value.trim();
-  if(!txt){ alert('JSON を貼り付けてください。'); return; }
-  applyJsonText(txt);
-});
-
-/* apply json */
 document.getElementById('applyJson').addEventListener('click', ()=>{
   const txt = els.jsonInput.value.trim();
-  if(!txt){ alert('JSON を貼り付けてください。'); return; }
+  if(!txt){ showToast('JSON を貼り付けてください。', true); return; }
   applyJsonText(txt);
 });
 
-/* download JSON */
 document.getElementById('downloadJson').addEventListener('click', ()=>{
   const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href=url; a.download='villager_catalog.json'; a.click(); URL.revokeObjectURL(url);
 });
 
-/* export button */
 document.getElementById('exportJson').addEventListener('click', ()=>{
   const txt = JSON.stringify(db, null, 2);
-  navigator.clipboard.writeText(txt).then(()=> alert('JSON をコピーしました'));
+  navigator.clipboard.writeText(txt).then(()=> showToast('JSON をクリップボードにコピーしました'));
 });
 
-/* clear all */
 document.getElementById('clearAll').addEventListener('click', ()=>{
   if(!confirm('全データをクリアしますか？（復元不可）')) return;
   db = {}; imgMap = {}; saveDb(); saveImgMap(); renderJobs(); renderLevels(); renderContent();
+  els.searchJobs.value = '';
+  els.search.value = '';
+  showToast('全データをクリアしました');
 });
 
-/* sample data */
 document.getElementById('loadSample').addEventListener('click', ()=>{
-  const sample = {
-    "司書": {
-      "新米": {
-        "エメラルドになるもの": [
-          {"item":"紙","count":24},
-          {"item":"本","count":6}
-        ],
-        "エメラルドで買えるもの": [
-          {"item":"本と羽ペン","count":1,"emerald":1},
-          {"item":"地図","count":1,"emerald":2}
-        ]
-      },
-      "達人": {
-        "エメラルドになるもの": [
-          {"item":"紙","count":8},
-          {"item":"羽根","count":4}
-        ],
-        "エメラルドで買えるもの": [
-          {"item":"エンチャントされた本","count":1,"emerald":12}
-        ]
-      }
-    },
-    "農民": {
-      "新米": {
-        "エメラルドになるもの":[ {"item":"小麦","count":20,"emerald":1} ],
-        "エメラルドで買えるもの":[ {"item":"パン","count":6,"emerald":1} ]
-      }
-    }
+  const sample = { "司書": { "新米": { "エメラルドになるもの": [ {"item":"紙","count":24}, {"item":"本","count":6} ], "エメラルドで買えるもの": [ {"item":"本と羽ペン","count":1,"emerald":1}, {"item":"地図","count":1,"emerald":2} ] }, "達人": { "エメラルドになるもの": [ {"item":"紙","count":8}, {"item":"羽根","count":4} ], "エメラルドで買えるもの": [ {"item":"エンチャントされた本","count":1,"emerald":12} ] } }, "農民": { "新米": { "エメラルドになるもの":[ {"item":"小麦","count":20,"emerald":1} ], "エメラルドで買えるもの":[ {"item":"パン","count":6,"emerald":1} ] } }
   };
   db = sample; saveDb(); state.job = null; state.level = null; renderJobs(); renderLevels(); renderContent();
-  alert('サンプルを読み込みました。JSONを編集して独自データを反映できます。');
+  els.searchJobs.value = '';
+  els.search.value = '';
+  showToast('サンプルを読み込みました');
 });
 
-/* search */
+// === 改善点：アイテム検索のリスナー ===
 els.search.addEventListener('input', ()=> renderContent());
 
-/* copy view */
+// === 改善点：職業検索のリスナー ===
+els.searchJobs.addEventListener('input', ()=> renderJobs());
+
 document.getElementById('copyView').addEventListener('click', ()=>{
-  // prepare a readable text of current view
-  if(!state.job || !state.level){ alert('職業とレベルを選んでください'); return; }
+  if(!state.job || !state.level){ showToast('職業とレベルを選んでください', true); return; }
   const node = db[state.job][state.level];
   const lines = [];
   lines.push(`${state.job} — ${state.level}`);
   lines.push('【売るもの → エメラルド】');
   (node['エメラルドになるもの']||[]).forEach(it=>{
-    const name = it.item || it.name || it;
-    const c = it.count || it.qty || '';
-    const e = it.emerald || it.cost || '';
+    const name = it.item || it.name || it; const c = it.count || it.qty || ''; const e = it.emerald || it.cost || '';
     lines.push(`- ${name} ${c?('×'+c):''} ${e?('→ '+e+'E'):''}`);
   });
   lines.push('【エメラルドで買えるもの】');
   (node['エメラルドで買えるもの']||[]).forEach(it=>{
-    const name = it.item || it.name || it;
-    const c = it.count || it.qty || '';
-    const e = it.emerald || it.cost || '';
+    const name = it.item || it.name || it; const c = it.count || it.qty || ''; const e = it.emerald || it.cost || '';
     lines.push(`- ${name} ${c?('×'+c):''} ${e?('← '+e+'E'):''}`);
   });
-  navigator.clipboard.writeText(lines.join('\\n')).then(()=> alert('表示内容をコピーしました'));
+  navigator.clipboard.writeText(lines.join('\n')).then(()=> showToast('表示内容をコピーしました'));
 });
 
 /* image mapping modal */
 document.getElementById('openImgMap').addEventListener('click', ()=> {
   openImgModal();
 });
-
 document.getElementById('closeImgModal').addEventListener('click', ()=> {
   els.imgModal.classList.remove('open');
 });
-
 document.getElementById('saveImgMap').addEventListener('click', ()=> {
-  // read inputs and save imgMap
   const inputs = els.imgMapList.querySelectorAll('input[data-name]');
   inputs.forEach(inp=>{
     const name = inp.dataset.name;
@@ -417,12 +579,11 @@ document.getElementById('saveImgMap').addEventListener('click', ()=> {
   saveImgMap();
   els.imgModal.classList.remove('open');
   renderContent();
-  alert('画像マップを保存しました（localStorage）');
+  showToast('画像マップを保存しました');
 });
 
 function openImgModal(){
   els.imgMapList.innerHTML = '';
-  // collect all item names from db
   const names = new Set();
   Object.keys(db).forEach(job=>{
     Object.keys(db[job]).forEach(level=>{
@@ -432,9 +593,10 @@ function openImgModal(){
   });
   if(names.size===0){ els.imgMapList.innerHTML = '<div style="color:var(--muted)">アイテムが見つかりません。JSON を読み込んでください。</div>'; }
   Array.from(names).sort((a,b)=> a.localeCompare(b,'ja')).forEach(n=>{
+    if(!n) return;
     const row = document.createElement('div'); row.className='row';
     row.innerHTML = `<label style="min-width:120px">${escapeHtml(n)}</label>
-      <input data-name="${escapeHtml(n)}" value="${imgMap[n]||''}" placeholder="画像URL または local base64 (ドラッグ不可) " style="flex:1" />
+      <input data-name="${escapeHtml(n)}" value="${imgMap[n]||''}" placeholder="画像URL または local base64" style="flex:1" class="small" />
       <input type="file" accept="image/*" data-file="${escapeHtml(n)}" />`;
     els.imgMapList.appendChild(row);
     const fileInput = row.querySelector('input[type="file"]');
@@ -450,36 +612,116 @@ function openImgModal(){
   els.imgModal.classList.add('open');
 }
 
-/* open editor for single item */
+/* 単一画像編集（モーダル） */
 function openImgEditor(itemName){
-  // quick modal that sets mapping for one item
-  const val = imgMap[itemName] || '';
-  const url = prompt(itemName + ' の画像URL または local画像（選択OK）。空にすると削除されます。', val);
-  if(url === null) return;
-  if(url.trim()) imgMap[itemName] = url.trim();
+  els.imgEditItemName.textContent = itemName;
+  els.imgEditHiddenName.value = itemName;
+  els.imgEditUrlInput.value = imgMap[itemName] || '';
+  els.imgEditFileInput.value = '';
+  els.imgEditModal.classList.add('open');
+}
+els.imgEditFileInput.addEventListener('change', (ev)=>{
+  const f = ev.target.files[0];
+  if(!f) return;
+  const fr = new FileReader();
+  fr.onload = ()=> { els.imgEditUrlInput.value = fr.result; };
+  fr.readAsDataURL(f);
+});
+document.getElementById('saveImgEditBtn').addEventListener('click', ()=>{
+  const itemName = els.imgEditHiddenName.value;
+  const url = els.imgEditUrlInput.value.trim();
+  if(url) imgMap[itemName] = url;
   else delete imgMap[itemName];
   saveImgMap();
   renderContent();
+  els.imgEditModal.classList.remove('open');
+  showToast('画像設定を保存しました');
+});
+document.getElementById('closeImgEditModal').addEventListener('click', ()=> {
+  els.imgEditModal.classList.remove('open');
+});
+
+/* 取引追加機能 */
+function openAddTradeModal(side) {
+  if (!state.job || !state.level) {
+    showToast('職業とレベルを選択してください', true);
+    return;
+  }
+  state.newTradeSide = side;
+  const sideText = side === 'sell' ? '売るもの' : '買えるもの';
+  els.addTradeTitle.textContent = `「${sideText}」を追加`;
+  
+  els.itemNameInput.value = '';
+  els.itemCountInput.value = '';
+  els.itemEmeraldInput.value = '';
+  
+  els.addTradeModal.classList.add('open');
+  els.itemNameInput.focus();
 }
 
-/* open pasted JSON prompt */
-document.getElementById('pasteJsonBtn').addEventListener('click', ()=> {
-  const txt = document.getElementById('jsonInput').value.trim();
-  if(!txt){ alert('左のテキストエリアに JSON を貼り付けてください。'); return; }
-  applyJsonText(txt);
+function saveNewTrade() {
+  const name = els.itemNameInput.value.trim();
+  const count = parseInt(els.itemCountInput.value, 10);
+  const emerald = parseInt(els.itemEmeraldInput.value, 10);
+
+  if (!name) {
+    showToast('アイテム名を入力してください', true);
+    return;
+  }
+  
+  const newItem = { item: name };
+  if (!isNaN(count) && count > 0) newItem.count = count;
+  if (!isNaN(emerald) && emerald > 0) newItem.emerald = emerald;
+
+  if (!db[state.job]) db[state.job] = {};
+  if (!db[state.job][state.level]) db[state.job][state.level] = {};
+  
+  const listKey = state.newTradeSide === 'sell' ? 'エメラルドになるもの' : 'エメラルドで買えるもの';
+  if (!Array.isArray(db[state.job][state.level][listKey])) {
+    db[state.job][state.level][listKey] = [];
+  }
+  
+  db[state.job][state.level][listKey].push(newItem);
+  
+  saveDb();
+  renderContent();
+  els.addTradeModal.classList.remove('open');
+  showToast('取引を追加しました');
+}
+
+els.addSellBtn.addEventListener('click', () => openAddTradeModal('sell'));
+els.addBuyBtn.addEventListener('click', () => openAddTradeModal('buy'));
+document.getElementById('closeAddTradeModal').addEventListener('click', () => {
+  els.addTradeModal.classList.remove('open');
 });
+document.getElementById('saveTradeBtn').addEventListener('click', saveNewTrade);
+
+
+/* 取引削除機能 */
+function deleteTrade(listKey, index, rowElement) {
+  if (!state.job || !state.level || !db[state.job][state.level][listKey]) return;
+  
+  const item = db[state.job][state.level][listKey][index];
+  const itemName = item.item || item.name || item;
+  
+  if (!confirm(`${itemName} の取引を削除しますか？`)) return;
+
+  rowElement.style.opacity = '0';
+  rowElement.style.transform = 'translateX(20px)';
+  
+  setTimeout(() => {
+    db[state.job][state.level][listKey].splice(index, 1);
+    saveDb();
+    renderContent();
+    showToast('取引を削除しました');
+  }, 300);
+}
 
 /* load from localStorage on startup */
 (function init(){
   renderJobs(); renderLevels(); renderContent();
 })();
 
-/* keyboard: Ctrl+V into jsonInput (for convenience) */
-document.addEventListener('keydown', (e)=> {
-  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === 'v') {
-    // do nothing special — user can paste into area
-  }
-});
 </script>
 </body>
 </html>
