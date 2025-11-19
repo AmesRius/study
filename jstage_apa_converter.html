@@ -241,7 +241,7 @@
             let processedAuthors = authorList.map(author => {
                 const parts = author.split(',');
                 if (parts.length > 1) {
-                    return `${parts[0].trim()}, ${parts[1].trim()}`;
+                    return `${parts[0].trim()} ${parts[1].trim()}`;
                 }
                 return author.trim();
             });
