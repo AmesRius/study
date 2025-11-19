@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APA参考文献ソート</title>
+    <title>APA参考文献ソート (ABC順)</title>
     <!-- Tailwind CSS CDNをロード -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -12,7 +12,7 @@
         textarea::-webkit-scrollbar-thumb { background-color: #4f46e5; border-radius: 4px; }
         textarea::-webkit-scrollbar-track { background: #f3f4f6; }
 
-        /* スタイリッシュなフォント設定 */
+        /* フォント設定 */
         body {
             font-family: 'Inter', 'Noto Sans JP', sans-serif;
         }
@@ -42,30 +42,21 @@
             <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-800 mb-2 tracking-tight">
                 APA文献リスト ソートメーカー
             </h1>
-            <p class="text-gray-500 text-lg">著者名のフリガナ指定による確実な五十音/アルファベット順並び替え</p>
+            <p class="text-gray-500 text-lg">著者名のアルファベット順（ABC順）並び替えツール</p>
         </header>
 
-        <!-- J-STAGE→APA方式変換ツールへのリンクを追加 -->
-        <div class="text-center mb-8">
-            <a href="jstage_apa_converter.html" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-lg text-white bg-green-500 hover:bg-green-600 transition duration-150 ease-in-out transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-green-300">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M3 8h18M3 12h18M3 16h18M3 20h18"></path></svg>
-                <span>文献メタデータをAPA方式に変換する場合はこちら</span>
-            </a>
-        </div>
-        <!-- リンク追加終了 -->
-        
         <div class="bg-white p-6 sm:p-10 rounded-2xl shadow-2xl border border-gray-200">
             
             <!-- 説明ボックス - 注意点 -->
             <div class="bg-red-50 border-2 border-accent-red/50 text-red-800 p-4 sm:p-5 mb-6 rounded-xl">
                 <div class="flex items-center">
                     <svg class="w-6 h-6 mr-3 text-accent-red" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                    <p class="font-bold text-xl">重要なお願い：読み仮名のルール</p>
+                    <p class="font-bold text-xl">重要なお願い: 読み仮名のルール</p>
                 </div>
                 <ul class="list-disc list-inside text-sm mt-3 ml-2 space-y-1">
-                    <li>日本語の文献は、行頭に[ヨミガナ]を付けてください。</li>
-                    <li>五十音順を選択する場合：読み仮名にはカタカナを使用してください。（例：[イシモト]）</li>
-                    <li>アルファベット順を選択する場合：読み仮名にはローマ字を使用してください。（例：[ISHIMOTO]）</li>
+                    <li>日本語の文献は、行頭に[ローマ字]の読み仮名を付けてください。</li>
+                    <li>例: <span class="font-mono bg-red-100 p-0.5 rounded">[ISHIMOTO]</span>石本雄真...</li>
+                    <li>英字文献（Smith, J.など）はフリガナ不要です。</li>
                 </ul>
             </div>
             
@@ -76,21 +67,17 @@
                     <label for="input-references" class="block text-xl font-bold text-gray-700 mb-3">
                         <span class="text-primary-blue mr-2">1.</span> 参考文献を貼り付け
                     </label>
-                    <textarea id="input-references" rows="12" class="w-full p-4 border-2 border-gray-300 rounded-xl input-focus focus:border-primary-blue transition duration-200 shadow-md" placeholder="例:&#10;[ヤマダ]or[YAMADA]山田 花子. (2022). 研究者の倫理. 学会誌C.&#10;Smith, J. (2018). Advanced Writing. Journal B."></textarea>
+                    <textarea id="input-references" rows="12" class="w-full p-4 border-2 border-gray-300 rounded-xl input-focus focus:border-primary-blue transition duration-200 shadow-md" placeholder="例:&#10;[YAMADA]山田 花子. (2022). 研究者の倫理. 学会誌C.&#10;Smith, J. (2018). Advanced Writing. Journal B."></textarea>
                 </div>
 
-                <!-- 操作エリア (選択と実行) -->
+                <!-- 操作エリア (実行と出力) -->
                 <div class="flex-1">
-                    <label for="sort-method" class="block text-xl font-bold text-gray-700 mb-3">
-                        <span class="text-primary-blue mr-2">2.</span> 並び替え方法を選択
+                    <label class="block text-xl font-bold text-gray-700 mb-3">
+                        <span class="text-primary-blue mr-2">2.</span> 並び替え実行
                     </label>
-                    <select id="sort-method" class="w-full p-4 border-2 border-gray-300 rounded-xl input-focus focus:border-primary-blue transition duration-200 shadow-md mb-6 bg-white text-gray-800 appearance-none">
-                        <option value="ja">五十音順 (日本語：カタカナのフリガナでソート)</option>
-                        <option value="en">アルファベット順 (日本語：ローマ字の読み仮名でソート)</option>
-                    </select>
-
+                    
                     <button onclick="sortReferences()" class="w-full py-4 text-xl font-extrabold text-white bg-primary-blue hover:bg-indigo-700 rounded-xl shadow-lg transform transition duration-200 hover:scale-[1.01] active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-primary-blue/50 mb-6">
-                        並び替えを実行
+                        アルファベット順に並び替え
                     </button>
                     
                     <!-- 出力エリア -->
@@ -121,7 +108,9 @@
             const inputEl = document.getElementById('input-references');
             const outputEl = document.getElementById('output-references');
             const messageEl = document.getElementById('message-box');
-            const sortMethod = document.getElementById('sort-method').value; // 'ja' or 'en'
+            
+            // ソート方法は 'en' (アルファベット順) に固定
+            const sortMethod = 'en'; 
             
             const rawText = inputEl.value;
 
@@ -159,10 +148,9 @@
                 };
             });
 
-            // 3. 辞書順でソート（選択されたロケールでソートを切り替える）
+            // 3. 辞書順でソート
+            // 'en' (アルファベット順) でソート
             processedReferences.sort((a, b) => {
-                // 'en' (アルファベット順) の場合、日本語と英語が混在したキーでもアルファベットの並びを優先する
-                // 'ja' (五十音順) の場合、日本語のルール（カタカナのフリガナ）を優先する
                 return a.key.localeCompare(b.key, sortMethod, { sensitivity: 'base' });
             });
 
@@ -172,11 +160,7 @@
             // 5. 結果を出力エリアに表示
             outputEl.value = sortedText;
             
-            const sortMessage = sortMethod === 'ja' 
-                                ? '五十音順に並び替えられました。' 
-                                : 'アルファベット順に並び替えられました。';
-            
-            showMessage(`ソートが完了しました。${references.length}件の参考文献が${sortMessage}`, 'success');
+            showMessage(`ソートが完了しました。${references.length}件の参考文献がアルファベット順に並び替えられました。`, 'success');
         }
 
         /**
