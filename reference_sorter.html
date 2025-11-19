@@ -12,7 +12,7 @@
         textarea::-webkit-scrollbar-thumb { background-color: #4f46e5; border-radius: 4px; }
         textarea::-webkit-scrollbar-track { background: #f3f4f6; }
 
-        /* フォント設定 */
+        /* スタイリッシュなフォント設定 */
         body {
             font-family: 'Inter', 'Noto Sans JP', sans-serif;
         }
@@ -42,21 +42,22 @@
             <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-800 mb-2 tracking-tight">
                 APA文献リスト ソートメーカー
             </h1>
-            <p class="text-gray-500 text-lg">著者名のアルファベット順（ABC順）並び替えツール</p>
+            <p class="text-gray-500 text-lg">著者名のアルファベット順（ABC順）並び替え専用ツール</p>
         </header>
 
         <div class="bg-white p-6 sm:p-10 rounded-2xl shadow-2xl border border-gray-200">
             
             <!-- 説明ボックス - 注意点 -->
-            <div class="bg-red-50 border-2 border-accent-red/50 text-red-800 p-4 sm:p-5 mb-6 rounded-xl">
+            <div class="bg-indigo-50 border-2 border-primary-blue/50 text-indigo-800 p-4 sm:p-5 mb-6 rounded-xl">
                 <div class="flex items-center">
-                    <svg class="w-6 h-6 mr-3 text-accent-red" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                    <p class="font-bold text-xl">重要なお願い: 読み仮名のルール</p>
+                    <svg class="w-6 h-6 mr-3 text-primary-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <p class="font-bold text-xl">入力が簡単になりました！</p>
                 </div>
                 <ul class="list-disc list-inside text-sm mt-3 ml-2 space-y-1">
-                    <li>日本語の文献は、行頭に[ローマ字]の読み仮名を付けてください。</li>
-                    <li>例: <span class="font-mono bg-red-100 p-0.5 rounded">[ISHIMOTO]</span>石本雄真...</li>
-                    <li>英字文献（Smith, J.など）はフリガナ不要です。</li>
+                    <li>日本語文献は行頭に [よみがな] を付けてください。</li>
+                    <li>ひらがな・カタカナでもOKです！自動的にローマ字順（ABC順）に並び替えます。</li>
+                    <li>例: [やまだ]山田... → 内部でYAMADAとして処理されます。</li>
+                    <li>下の「全ての行頭に [ ] を挿入」ボタンを使うと便利です。</li>
                 </ul>
             </div>
             
@@ -64,10 +65,15 @@
                 
                 <!-- 入力エリア -->
                 <div class="flex-1 mb-8 lg:mb-0">
-                    <label for="input-references" class="block text-xl font-bold text-gray-700 mb-3">
-                        <span class="text-primary-blue mr-2">1.</span> 参考文献を貼り付け
-                    </label>
-                    <textarea id="input-references" rows="12" class="w-full p-4 border-2 border-gray-300 rounded-xl input-focus focus:border-primary-blue transition duration-200 shadow-md" placeholder="例:&#10;[YAMADA]山田 花子. (2022). 研究者の倫理. 学会誌C.&#10;Smith, J. (2018). Advanced Writing. Journal B."></textarea>
+                    <div class="flex justify-between items-end mb-3">
+                        <label for="input-references" class="block text-xl font-bold text-gray-700">
+                            <span class="text-primary-blue mr-2">1.</span> 参考文献を貼り付け
+                        </label>
+                        <button onclick="insertBrackets()" class="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-1 px-3 rounded transition duration-200">
+                            全ての行頭に [ ] を挿入
+                        </button>
+                    </div>
+                    <textarea id="input-references" rows="12" class="w-full p-4 border-2 border-gray-300 rounded-xl input-focus focus:border-primary-blue transition duration-200 shadow-md" placeholder="例:&#10;[やまだ]山田 花子. (2022). 研究者の倫理. 学会誌C.&#10;Smith, J. (2018). Advanced Writing. Journal B."></textarea>
                 </div>
 
                 <!-- 操作エリア (実行と出力) -->
@@ -102,6 +108,109 @@
 
     <script>
         /**
+         * 入力エリアの各行の先頭に [ ] を挿入します。既に [] で始まる行はスキップします。
+         */
+        function insertBrackets() {
+            const inputEl = document.getElementById('input-references');
+            const text = inputEl.value;
+            const lines = text.split('\n');
+            
+            const newLines = lines.map(line => {
+                const trimmed = line.trim();
+                if (trimmed.length > 0 && !trimmed.startsWith('[')) {
+                    return `[]${line}`; // 行頭の空白は維持せず、[]を行の絶対先頭につけるなら `[]${trimmed}` だが、インデント維持のため元のlineを使うのが安全か検討。ここではシンプルに `[]` + 元の行とする。
+                }
+                return line;
+            });
+            
+            inputEl.value = newLines.join('\n');
+            showMessage('[ ] を挿入しました。カッコの中に読み仮名（ひらがな可）を入力してください。', 'success');
+            inputEl.focus();
+        }
+
+        /**
+         * ひらがな・カタカナをローマ字に変換する簡易関数（ソート用）
+         */
+        function kanaToRomaji(str) {
+            const table = {
+                'あ':'a', 'い':'i', 'う':'u', 'え':'e', 'お':'o',
+                'か':'ka', 'き':'ki', 'く':'ku', 'け':'ke', 'こ':'ko',
+                'さ':'sa', 'し':'shi', 'す':'su', 'せ':'se', 'そ':'so',
+                'た':'ta', 'ち':'chi', 'つ':'tsu', 'て':'te', 'と':'to',
+                'な':'na', 'に':'ni', 'ぬ':'nu', 'ね':'ne', 'の':'no',
+                'は':'ha', 'ひ':'hi', 'ふ':'fu', 'へ':'he', 'ほ':'ho',
+                'ま':'ma', 'み':'mi', 'む':'mu', 'め':'me', 'も':'mo',
+                'や':'ya', 'ゆ':'yu', 'よ':'yo',
+                'ら':'ra', 'り':'ri', 'る':'ru', 'れ':'re', 'ろ':'ro',
+                'わ':'wa', 'を':'wo', 'ん':'n',
+                'が':'ga', 'ぎ':'gi', 'ぐ':'gu', 'げ':'ge', 'ご':'go',
+                'ざ':'za', 'じ':'ji', 'ず':'zu', 'ぜ':'ze', 'ぞ':'zo',
+                'だ':'da', 'ぢ':'ji', 'づ':'zu', 'で':'de', 'ど':'do',
+                'ば':'ba', 'び':'bi', 'ぶ':'bu', 'べ':'be', 'ぼ':'bo',
+                'ぱ':'pa', 'ぴ':'pi', 'ぷ':'pu', 'ぺ':'pe', 'ぽ':'po',
+                'きゃ':'kya', 'きゅ':'kyu', 'きょ':'kyo',
+                'しゃ':'sha', 'しゅ':'shu', 'しょ':'sho',
+                'ちゃ':'cha', 'ちゅ':'chu', 'ちょ':'cho',
+                'にゃ':'nya', 'にゅ':'nyu', 'にょ':'nyo',
+                'ひゃ':'hya', 'ひゅ':'hyu', 'ひょ':'hyo',
+                'みゃ':'mya', 'みゅ':'myu', 'みょ':'myo',
+                'りゃ':'rya', 'りゅ':'ryu', 'りょ':'ryo',
+                'ぎゃ':'gya', 'ぎゅ':'gyu', 'ぎょ':'gyo',
+                'じゃ':'ja', 'じゅ':'ju', 'じょ':'jo',
+                'びゃ':'bya', 'びゅ':'byu', 'びょ':'byo',
+                'ぴゃ':'pya', 'ぴゅ':'pyu', 'ぴょ':'pyo',
+                'ー':'-' 
+            };
+            
+            // カタカナをひらがなに変換
+            str = str.replace(/[\u30a1-\u30f6]/g, function(match) {
+                var chr = match.charCodeAt(0) - 0x60;
+                return String.fromCharCode(chr);
+            });
+
+            let res = '';
+            for (let i = 0; i < str.length; i++) {
+                let char = str[i];
+                let next = str[i+1];
+                
+                // 促音「っ」の処理
+                if (char === 'っ' || char === 'ッ') {
+                    if (next) {
+                        // 次の文字のローマ字の最初の子音を重ねる（簡易処理）
+                        // ここでは完全なローマ字変換テーブルが必要になるため、
+                        // 簡易的に「次が母音以外ならその子音を重ねる」とするが、
+                        // マッピングテーブルを使って先読み変換するのが確実
+                        let twoChars = str.substring(i+1, i+3);
+                        let oneChar = str.substring(i+1, i+2);
+                        let roman = table[twoChars] || table[oneChar];
+                        if (roman) {
+                            res += roman.charAt(0);
+                        }
+                        continue;
+                    }
+                }
+
+                // 2文字（拗音）マッチ
+                let twoChars = str.substring(i, i+2);
+                if (table[twoChars]) {
+                    res += table[twoChars];
+                    i++;
+                    continue;
+                }
+                
+                // 1文字マッチ
+                if (table[char]) {
+                    res += table[char];
+                    continue;
+                }
+                
+                // マッチしなければそのまま（英字など）
+                res += char;
+            }
+            return res.toUpperCase();
+        }
+
+        /**
          * 参考文献リストを取得し、フリガナをキーとしてソートして出力エリアに表示します。
          */
         function sortReferences() {
@@ -134,9 +243,12 @@
                 const match = line.match(/^\[(.+?)\]\s*(.*)$/);
                 
                 if (match) {
-                    // フリガナ/ローマ字が見つかった場合
-                    const sortBase = match[1].toUpperCase();
-                    // keyは [読み仮名] + 残りの文献データ となる
+                    // フリガナ(ひらがな/カタカナ/ローマ字)が見つかった場合
+                    const rawReading = match[1];
+                    // 自動変換：ひらがな/カタカナならローマ字に、そうでなければそのまま大文字化
+                    const sortBase = kanaToRomaji(rawReading);
+                    
+                    // keyは [変換後ローマ字] + 残りの文献データ となる
                     key = sortBase + match[2]; 
                     // originalはフリガナを削除した部分 (出力として使用)
                     original = match[2].trim(); 
