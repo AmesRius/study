@@ -35,15 +35,30 @@
         
         <!-- === コード入力エリア === -->
         <div id="code-area" class="w-full lg:w-1/2 h-1/2 lg:h-full flex flex-col p-4 transition-all">
-            <div class="flex justify-between items-center mb-3">
-                <h2 class="text-xl font-semibold text-gray-800">HTML コード</h2>
-                <div class="flex space-x-2">
+            <div class="flex flex-wrap justify-between items-center mb-3 gap-2">
+                <h2 class="text-xl font-semibold text-gray-800 shrink-0">HTML コード</h2>
+                
+                <div class="flex items-center space-x-2 bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
+                    <!-- ファイル名入力エリア -->
+                    <div class="flex items-center px-2">
+                        <input type="text" id="filename-input" value="index" placeholder="filename" class="text-sm text-right w-24 focus:outline-none text-gray-700 border-b border-gray-300 focus:border-blue-500 transition-colors bg-transparent">
+                        <span class="text-sm text-gray-400 ml-1">.html</span>
+                    </div>
+
+                    <div class="h-4 w-px bg-gray-300 mx-1"></div>
+
+                    <!-- ダウンロードボタン -->
+                    <button id="download-btn" title="ダウンロード" class="p-1.5 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    </button>
+
                     <!-- クリアボタン -->
-                    <button id="clear-code" title="クリア" class="p-1.5 text-gray-600 hover:text-red-500 hover:bg-gray-200 rounded-md transition-colors">
+                    <button id="clear-code" title="クリア" class="p-1.5 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
+                    
                     <!-- コードエリア最大化ボタン -->
-                    <button id="toggle-code-fullscreen" title="最大化/元に戻す" class="p-1.5 text-gray-600 hover:text-blue-500 hover:bg-gray-200 rounded-md transition-colors">
+                    <button id="toggle-code-fullscreen" title="最大化/元に戻す" class="p-1.5 text-gray-600 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors">
                         <!-- 初期アイコン (最大化) -->
                         <svg class="w-5 h-5" id="code-expand-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m0 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5h-4m0 0v-4m0 4l-5-5"></path></svg>
                         <!-- 縮小アイコン (最初は非表示) -->
@@ -90,6 +105,8 @@
         const previewArea = document.getElementById('preview-area');
 
         const clearCodeBtn = document.getElementById('clear-code');
+        const downloadBtn = document.getElementById('download-btn');
+        const filenameInput = document.getElementById('filename-input');
         
         const toggleCodeFsBtn = document.getElementById('toggle-code-fullscreen');
         const codeExpandIcon = document.getElementById('code-expand-icon');
@@ -123,6 +140,7 @@
         // プレビューを更新する関数
         function updatePreview() {
             const htmlCode = htmlInput.value;
+            // プレビュー用にCSSを含めたHTMLを作成
             const iframeContent = `
                 <html>
                 <head>
@@ -137,6 +155,55 @@
             doc.open();
             doc.write(iframeContent);
             doc.close();
+        }
+
+        // ファイルダウンロード処理
+        function downloadHtmlFile() {
+            const content = htmlInput.value;
+            let filename = filenameInput.value.trim();
+            
+            // ファイル名が空ならデフォルト設定
+            if (!filename) {
+                filename = 'index';
+            }
+            // 拡張子がなければ追加
+            if (!filename.toLowerCase().endsWith('.html')) {
+                filename += '.html';
+            }
+
+            // 完全なHTMLファイルとして整形してダウンロードさせる（TailwindのCDNを含めるなど）
+            // ユーザーが書いたコードをそのままダウンロードさせたい場合は content をそのまま使いますが、
+            // ここではプレビューと同じ状態でダウンロードできるように基本構造を補完します。
+            
+            // もしユーザーの入力に <html> タグが含まれていない場合のみ補完するロジック
+            let fileContent = content;
+            if (!content.includes('<html')) {
+                fileContent = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${filename}</title>
+    <script src="https://cdn.tailwindcss.com"><\/script>
+</head>
+<body>
+${content}
+</body>
+</html>`;
+            }
+
+            const blob = new Blob([fileContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            
+            // クリーンアップ
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         // コードエリアの最大化/縮小
@@ -183,8 +250,10 @@
 
         // コードをクリア
         function clearCode() {
-            htmlInput.value = '';
-            updatePreview();
+            if(confirm('コードを全て消去してもよろしいですか？')) {
+                htmlInput.value = '';
+                updatePreview();
+            }
         }
 
         // === イベントリスナー ===
@@ -201,10 +270,13 @@
         // 3. クリアボタン
         clearCodeBtn.addEventListener('click', clearCode);
 
-        // 4. コード最大化ボタン
+        // 4. ダウンロードボタン
+        downloadBtn.addEventListener('click', downloadHtmlFile);
+
+        // 5. コード最大化ボタン
         toggleCodeFsBtn.addEventListener('click', toggleCodeFullscreen);
         
-        // 5. プレビュー最大化ボタン
+        // 6. プレビュー最大化ボタン
         togglePreviewFsBtn.addEventListener('click', togglePreviewFullscreen);
 
     </script>
