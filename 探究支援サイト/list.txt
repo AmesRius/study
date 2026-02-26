@@ -1,0 +1,155 @@
+フォルダー パスの一覧:  ボリューム Local Disk
+ボリューム シリアル番号は B63E-57C2 です
+C:.
+│  index.html
+│  list.txt
+│  tree_to_file.py
+│  探究学習支援サイトファイル構成.txt
+│  
+├─about
+│      index.html
+│      
+├─assets
+│  ├─css
+│  │      components.css
+│  │      layout.css
+│  │      style.css
+│  │      
+│  ├─fonts
+│  ├─images
+│  │  ├─icons
+│  │  ├─illustrations
+│  │  └─ogp
+│  └─js
+│          main.js
+│          theme-data.js
+│          theme-search.js
+│          
+├─case-studies
+│      index.html
+│      
+├─common
+│      breadcrumb.html
+│      footer.html
+│      header.html
+│      nav.html
+│      
+├─downloads
+│  │  index.html
+│  │  
+│  ├─checklists
+│  │      presentation-checklist.pdf
+│  │      research-checklist.pdf
+│  │      theme-checklist.pdf
+│  │      
+│  ├─templates
+│  │      report-template.docx
+│  │      slide-template.pptx
+│  │      survey-template.docx
+│  │      
+│  └─worksheets
+│          question-sheet.pdf
+│          research-plan-sheet.pdf
+│          theme-sheet.pdf
+│          
+├─guides
+│  │  index.html
+│  │  
+│  ├─methods
+│  │      index.html
+│  │      mixed-methods.html
+│  │      qualitative.html
+│  │      quantitative.html
+│  │      
+│  ├─thinking
+│  │      critical-thinking.html
+│  │      hypothesis.html
+│  │      index.html
+│  │      logic-structure.html
+│  │      
+│  └─writing
+│          abstract-howto.html
+│          index.html
+│          reference-writing.html
+│          report-structure.html
+│          
+├─resources
+│  │  index.html
+│  │  
+│  ├─academic
+│  │      research-portals.html
+│  │      university-db.html
+│  │      
+│  ├─learning
+│  │      kids-research-sites.html
+│  │      online-courses.html
+│  │      
+│  └─statistics
+│          global-data.html
+│          government-data.html
+│          
+├─support
+│  │  index.html
+│  │  _template.html
+│  │  
+│  ├─analysis
+│  │      common-mistakes.html
+│  │      from-result-to-idea.html
+│  │      how-to-analyze.html
+│  │      index.html
+│  │      
+│  ├─investigation
+│  │      experiment-plan.html
+│  │      index.html
+│  │      interview-tips.html
+│  │      survey-design.html
+│  │      
+│  ├─presentation
+│  │      index.html
+│  │      poster-tips.html
+│  │      slide-structure.html
+│  │      speaking-tips.html
+│  │      
+│  ├─question
+│  │      checklist.html
+│  │      deepen-question.html
+│  │      good-question.html
+│  │      index.html
+│  │      
+│  ├─research
+│  │      citation-basics.html
+│  │      how-to-search.html
+│  │      index.html
+│  │      reliable-sources.html
+│  │      
+│  └─theme
+│          examples.html
+│          how-to-find.html
+│          index.html
+│          narrow-down.html
+│          
+└─tools
+    │  index.html
+    │  
+    ├─data
+    │      e-stat.html
+    │      un-data.html
+    │      worldbank-data.html
+    │      
+    ├─diagnosis
+    │      index.html
+    │      
+    ├─presentation
+    │      canva.html
+    │      google-slides.html
+    │      miro.html
+    │      
+    ├─search
+    │      ci-nii.html
+    │      google-scholar.html
+    │      jstage.html
+    │      
+    └─writing
+            citation-tools.html
+            grammar-check.html
+            
