@@ -12,12 +12,12 @@
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
     <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm text-center">
-        <h1 class="text-2xl font-bold mb-6 text-gray-800">試運転用タイマー</h1>
+        <h1 class="text-2xl font-bold mb-6 text-gray-800">発表用タイマー</h1>
         
-        <div id="display" class="text-6xl font-mono font-bold mb-8 text-gray-900">00:30</div>
+        <div id="display" class="text-6xl font-mono font-bold mb-8 text-gray-900">05:00</div>
 
         <div class="mb-6">
-            <button onclick="startFullTimer()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold transition">30秒タイマーを開始 (15秒で通知)</button>
+            <button onclick="startFullTimer()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold transition">5分タイマーを開始 (3分で通知)</button>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -27,10 +27,10 @@
     </div>
 
     <script>
-        let timeLeft = 30;
+        let timeLeft = 300;
         let timerId = null;
         let isRunning = false;
-        let hasNotified15Sec = false;
+        let hasNotified3Min = false;
 
         const display = document.getElementById('display');
         const startBtn = document.getElementById('startBtn');
@@ -40,7 +40,7 @@
             const secs = timeLeft % 60;
             display.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
             
-            if (timeLeft < 10) {
+            if (timeLeft < 60) {
                 display.classList.add('text-red-600');
             } else {
                 display.classList.remove('text-red-600');
@@ -49,8 +49,8 @@
 
         function startFullTimer() {
             resetTimer();
-            timeLeft = 30;
-            hasNotified15Sec = false;
+            timeLeft = 300;
+            hasNotified3Min = false;
             updateDisplay();
             toggleTimer();
         }
@@ -63,17 +63,17 @@
                 timerId = setInterval(() => {
                     if (timeLeft > 0) {
                         timeLeft--;
-                        // 15秒経過時（残り15秒になった時）の通知
-                        if (timeLeft === 15 && !hasNotified15Sec) {
-                            playSound(880); // 15秒経過時は高い音
-                            hasNotified15Sec = true;
+                        // 3分経過時（残り2分になった時）の通知
+                        if (timeLeft === 120 && !hasNotified3Min) {
+                            playSound(880); // 3分経過時は高い音
+                            hasNotified3Min = true;
                         }
                         updateDisplay();
                     } else {
                         clearInterval(timerId);
                         isRunning = false;
                         startBtn.textContent = 'スタート';
-                        playSound(440); // 30秒経過時は通常の音
+                        playSound(440); // 5分経過時は通常の音
                     }
                 }, 1000);
                 startBtn.textContent = '一時停止';
@@ -84,9 +84,9 @@
         function resetTimer() {
             clearInterval(timerId);
             isRunning = false;
-            hasNotified15Sec = false;
+            hasNotified3Min = false;
             startBtn.textContent = 'スタート';
-            timeLeft = 30;
+            timeLeft = 300;
             updateDisplay();
         }
 
